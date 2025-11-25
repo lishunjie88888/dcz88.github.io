@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>上海海事大学：时空校史图鉴</title>
+    
+    <!-- 引入 Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- 引入 Leaflet.js -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* ================= 全局样式 ================= */
+        body { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #e2e8f0; background-color: #000; }
+        
+        #map-view-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 10; }
+        #campus-3d-view-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: none; opacity: 0; transition: opacity 0.5s; z-index: 20; background: black; }
+        
+        .hidden-view { opacity: 0 !important; pointer-events: none !important; }
+
+        /* ================= UI 组件 ================= */
+        .glass-panel {
+            background: rgba(15, 23, 30, 0.85); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+
+        .glass-btn {
+            background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;
+            display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+        }
+        .glass-btn:hover { background: rgba(0, 119, 190, 0.8); border-color: #0077be; }
+
+        /* ================= 标题栏 (强制一行) ================= */
+        .main-title-container {
+            position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+            padding: 10px 30px; border-radius: 50px; 
+            display: flex; align-items: center; gap: 12px; z-index: 500; pointer-events: none;
+            white-space: nowrap; /* 核心：强制不换行 */
+            background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,40,80,0.8) 50%, rgba(0,0,0,0.8) 100%);
+            border: 1px solid rgba(0, 119, 190, 0.5);
+            box-shadow: 0 0 20px rgba(0, 119, 190, 0.3);
+        }
+        .main-title-text { margin: 0; font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 2px; }
+        .main-title-icon { color: #00d2ff; font-size: 20px; }
+
+        /* ================= 地图样式 ================= */
+        #map { width: 100%; height: 100%; background: #0b1016; }
+        
+        .campus-marker-icon {
+            width: 16px; height: 16px; background: #fbbf24; border: 2px solid #fff; border-radius: 50%;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.5); transition: all 0.3s;
+        }
+        .campus-marker-icon:hover { transform: scale(1.4); background: #00d2ff; border-color: #fff; }
+        .active-marker .campus-marker-icon { background: #ef4444; box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.4); }
+
+        /* Tooltip */
+        .campus-tooltip {
+            background: rgba(0,0,0,0.9) !important; border: 1px solid #fbbf24 !important; color: #fbbf24 !important;
+            font-family: sans-serif; font-size: 12px; padding: 2px 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+        }
+        .leaflet-tooltip-top:before { border-top-color: #fbbf24 !important; }
+
+        /* ================= 侧边栏 ================= */
+        .ui-panel {
+            position: fixed; right: -420px; top: 0; width: 360px; height: 100%;
+            padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; 
+            z-index: 1000; transition: right 0.4s ease;
+        }
+        .ui-panel.open { right: 0; }
+
+        .panel-header { border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px; }
+        .panel-year { font-size: 36px; font-weight: 900; color: rgba(255,255,255,0.08); position: absolute; right: 20px; top: 10px; pointer-events: none; }
+        .panel-title { font-size: 20px; font-weight: bold; color: #00d2ff; margin: 0; }
+        .panel-loc { font-size: 12px; color: #94a3b8; margin-top: 4px; display: flex; align-items: center; gap: 5px; }
+
+        .chat-area { flex: 1; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .msg-box { padding: 10px; border-radius: 6px; font-size: 13px; line-height: 1.5; }
+        .msg-ai { background: rgba(255,255,255,0.05); border-left: 2px solid #00d2ff; color: #ddd; }
+        .msg-user { background: rgba(0, 119, 190, 0.3); align-self: flex-end; color: #fff; }
+
+        /* 挑战题 */
+        .quiz-wrap { background: rgba(251, 191, 36, 0.05); border: 1px solid rgba(251, 191, 36, 0.3); padding: 10px; border-radius: 6px; margin-top: 5px; }
+        .quiz-opt { padding: 6px; margin: 4px 0; background: rgba(0,0,0,0.3); cursor: pointer; border-radius: 4px; font-size: 12px; transition: 0.2s; }
+        .quiz-opt:hover { background: rgba(251, 191, 36, 0.2); }
+        .quiz-opt.correct { background: rgba(34, 197, 94, 0.3); border-left: 3px solid #22c55e; }
+        .quiz-opt.wrong { background: rgba(239, 68, 68, 0.3); border-left: 3px solid #ef4444; }
+
+        .input-bar { display: flex; gap: 8px; }
+        .chat-in { flex: 1; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 4px; padding: 8px; color: white; outline: none; }
+        
+        /* 地图控制 */
+        .map-ctrls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 500; }
+
+        /* 3D Label */
+        .geo-label { position: absolute; bottom: 30px; left: 30px; z-index: 100; pointer-events: none; }
+        .geo-label h2 { margin: 0; font-size: 28px; color: #fff; letter-spacing: 1px; text-shadow: 0 2px 4px black; }
+        .geo-label p { margin: 0; color: #00d2ff; font-size: 12px; font-family: monospace; }
+
+        /* Modal */
+        .modal-mask { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:2000; backdrop-filter:blur(4px); }
+        .modal-box { width: 300px; padding: 20px; border-radius: 8px; border: 1px solid #00d2ff; background: #111; }
+    </style>
+</head>
+<body>
+
+    <div id="map-view-container">
+        <div id="map"></div>
+
+        <div class="main-title-container">
+            <i class="fa-solid fa-anchor main-title-icon"></i>
+            <h1 class="main-title-text">上海海事大学校史图鉴</h1>
+        </div>
+
+        <div style="position: absolute; top: 30px; right: 30px; z-index: 500;">
+            <button class="glass-btn" onclick="showSettings()"><i class="fa-solid fa-gear"></i> 设置</button>
+        </div>
+
+        <div class="map-ctrls">
+            <button class="glass-btn" onclick="resetView()"><i class="fa-solid fa-earth-asia"></i> 全局</button>
+            <button class="glass-btn" onclick="flyToCity([31.23, 121.50], 11)"><i class="fa-solid fa-city"></i> 上海</button>
+            <button class="glass-btn" onclick="flyToCity([29.58, 106.58], 12)"><i class="fa-solid fa-mountain"></i> 重庆</button>
+        </div>
+
+        <div class="ui-panel glass-panel" id="uiPanel">
+            <div class="panel-header">
+                <div class="panel-year" id="pYear">1909</div>
+                <h2 class="panel-title" id="pTitle">Title</h2>
+                <div class="panel-loc" id="pLoc"><i class="fa-solid fa-location-dot"></i> <span>Location</span></div>
+                <button style="position:absolute; right:15px; top:15px; background:none; border:none; color:#666; cursor:pointer; font-size:20px;" onclick="closePanel()">&times;</button>
+            </div>
+
+            <button class="glass-btn" style="width:100%; justify-content:center; margin-bottom:15px; background:linear-gradient(90deg, #005580, #0077be); border:none;" onclick="to3D()">
+                <i class="fa-solid fa-satellite"></i> 切换卫星定位视角
+            </button>
+
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="glass-btn" style="flex:1; justify-content:center;" onclick="getFact()">💡 真实冷知识</button>
+                <button class="glass-btn" style="flex:1; justify-content:center;" onclick="startQuiz()">🏆 挑战</button>
+            </div>
+
+            <div class="chat-area" id="chatBox"></div>
+            
+            <div class="input-bar">
+                <input type="text" class="chat-in" id="chatIn" placeholder="问问这段历史..." onkeypress="if(event.key==='Enter') sendMsg()">
+                <button class="glass-btn" onclick="sendMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="campus-3d-view-container">
+        <div id="webgl-container" style="width:100%; height:100%;"></div>
+        <button class="glass-btn" style="position:absolute; top:30px; left:30px; z-index:100;" onclick="toMap()">
+            <i class="fa-solid fa-arrow-left"></i> 返回地图
+        </button>
+        <div class="geo-label">
+            <h2 id="geoTitle">LOCATION</h2>
+            <p id="geoCoord">LAT / LON</p>
+        </div>
+    </div>
+
+    <div class="modal-mask" id="settingsModal" style="display:none;">
+        <div class="modal-box">
+            <h3 style="color:#00d2ff; margin-top:0;">API 配置</h3>
+            <input type="password" id="keyIn" class="chat-in" style="width:100%; box-sizing:border-box; margin-bottom:10px;" placeholder="API Key">
+            <input type="text" id="urlIn" class="chat-in" style="width:100%; box-sizing:border-box; margin-bottom:20px;" value="https://api.deepseek.com">
+            <button class="glass-btn" style="width:100%; justify-content:center;" onclick="saveConfig()">保存</button>
+        </div>
+    </div>
+
+    <script>
+        // ================= 严谨的历史数据 =================
+        const historyData = {
+            '1909': { 
+                name: "徐家汇借舍", year: "1909", lat: 31.1960, lon: 121.4350,
+                loc: "上海徐家汇 (南洋公学内)",
+                desc: "晚清邮传部上海高等实业学堂（今交通大学）内设立'船政科'，开创中国高等航海教育先河。无独立校舍，借用公学房舍办学。",
+                zoom: 14 
+            },
+            '1912': { 
+                name: "吴淞炮台湾", year: "1912", lat: 31.3930, lon: 121.5030,
+                loc: "上海吴淞炮台湾",
+                desc: "船政科独立，成立'吴淞商船学校'。这是中国第一所拥有独立校舍的高等航海学府。1937年'八一三'事变中校舍被日军炸毁。",
+                zoom: 13 
+            },
+            '1939': { 
+                name: "重庆溉澜溪", year: "1939", lat: 29.6000, lon: 106.5700,
+                loc: "重庆江北溉澜溪",
+                desc: "抗战爆发学校内迁。1939年复校称'国立重庆商船专科学校'。初期无校舍，租赁'江顺'轮办学（人称'舟大'），1942年在溉澜溪建成陆地校舍。",
+                zoom: 13 
+            },
+            '1946': { 
+                name: "虹口复校", year: "1946", lat: 31.2520, lon: 121.4950,
+                loc: "上海虹口东长治路",
+                desc: "抗战胜利，国立吴淞商船专科学校回沪复校。因吴淞原址毁于战火，校址设在东长治路505号（原雷士德工学院旧址）。",
+                zoom: 14 
+            },
+            '1950': { 
+                name: "上海航务学院", year: "1950", lat: 31.2550, lon: 121.5020,
+                loc: "上海虹口 (东长治路区域)",
+                desc: "国立吴淞商船专科学校与上海交通大学航业管理系合并，成立'上海航务学院'。1953年，学院主体迁往大连，与其他院校合并组建大连海运学院。",
+                zoom: 14 
+            },
+            '1959': { 
+                name: "民生路校区", year: "1959", lat: 31.2360, lon: 121.5530,
+                loc: "上海浦东大道1550号",
+                desc: "交通部在沪重建'上海海运学院'，定址浦东大道民生路。一号楼、二号楼见证了半个世纪的航海人才培养。",
+                zoom: 14 
+            },
+            '2008': { 
+                name: "临港新校区", year: "2008", lat: 30.9060, lon: 121.9060,
+                loc: "上海临港新城海港大道",
+                desc: "学校主体搬迁至东海之滨。拥有万吨级教学实习船'吴淞'号、全功能航海模拟器等现代化设施，2004年已更名为'上海海事大学'。",
+                zoom: 13 
+            }
+        };
+
+        let map, currentId = null;
+        let config = { key: localStorage.getItem('sk') || 'sk-bf28c6d3ddfb4b88bc7b8d2b6efa0754', url: localStorage.getItem('su') || 'https://api.deepseek.com' };
+
+        // ================= Leaflet 地图 =================
+        function initMap() {
+            map = L.map('map', { center: [35, 105], zoom: 4, zoomControl: false, attributionControl: false });
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19, attribution: 'Esri'
+            }).addTo(map);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19, opacity: 0.8
+            }).addTo(map);
+
+            const points = Object.values(historyData).map(d => [d.lat, d.lon]);
+            L.polyline(points, { color: '#00d2ff', weight: 2, dashArray: '5, 10', opacity: 0.7 }).addTo(map);
+
+            Object.keys(historyData).forEach(id => {
+                const d = historyData[id];
+                const icon = L.divIcon({
+                    className: 'custom-icon',
+                    html: `<div class="campus-marker-icon"></div>`,
+                    iconSize: [16, 16], iconAnchor: [8, 8]
+                });
+                const marker = L.marker([d.lat, d.lon], {icon}).addTo(map);
+                marker.bindTooltip(`<b>${d.year}</b> ${d.name}`, { 
+                    permanent: true, direction: 'top', className: 'campus-tooltip', offset: [0, -10]
+                });
+                marker.on('click', () => selectLoc(id, marker));
+            });
+        }
+
+        function selectLoc(id, marker) {
+            currentId = id;
+            const d = historyData[id];
+            document.querySelectorAll('.active-marker').forEach(e => e.classList.remove('active-marker'));
+            if(marker.getElement()) marker.getElement().classList.add('active-marker');
+
+            map.flyTo([d.lat, d.lon], d.zoom, { duration: 1.5 });
+
+            const p = document.getElementById('uiPanel');
+            p.classList.add('open');
+            document.getElementById('pYear').innerText = d.year;
+            document.getElementById('pTitle').innerText = d.name;
+            document.getElementById('pLoc').innerHTML = `<i class="fa-solid fa-location-dot"></i> ${d.loc}`;
+            
+            const chat = document.getElementById('chatBox');
+            chat.innerHTML = '';
+            addMsg('ai', `⚓ <b>${d.name} (${d.year})</b><br>${d.desc}`);
+        }
+
+        function closePanel() {
+            document.getElementById('uiPanel').classList.remove('open');
+            document.querySelectorAll('.active-marker').forEach(e => e.classList.remove('active-marker'));
+            resetView();
+        }
+
+        function resetView() { map.flyTo([35, 105], 4); }
+        function flyToCity(coord, z) { map.flyTo(coord, z); }
+
+        // ================= 3D 卫星定位 (Three.js) =================
+        let scene, camera, renderer, earth, markerObj;
+        let is3DInit = false;
+
+        function init3D() {
+            if(is3DInit) return;
+            const w = document.getElementById('webgl-container').offsetWidth;
+            const h = document.getElementById('webgl-container').offsetHeight;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 1000);
+            camera.position.z = 18;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(w, h);
+            document.getElementById('webgl-container').appendChild(renderer.domElement);
+
+            new THREE.OrbitControls(camera, renderer.domElement).enableDamping = true;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+            sun.position.set(50, 30, 50);
+            scene.add(sun);
+
+            const loader = new THREE.TextureLoader();
+            loader.crossOrigin = 'anonymous';
+            const mat = new THREE.MeshPhongMaterial({
+                map: loader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'),
+                bumpMap: loader.load('https://unpkg.com/three-globe/example/img/earth-topology.png'),
+                bumpScale: 0.02, specular: 0x333333, shininess: 5
+            });
+            earth = new THREE.Mesh(new THREE.SphereGeometry(5, 64, 64), mat);
+            scene.add(earth);
+
+            const atmos = new THREE.Mesh(
+                new THREE.SphereGeometry(5.1, 64, 64),
+                new THREE.MeshPhongMaterial({ color: 0x00aaff, transparent: true, opacity: 0.1, side: THREE.BackSide, blending: THREE.AdditiveBlending })
+            );
+            scene.add(atmos);
+
+            markerObj = new THREE.Group();
+            const beam = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.02, 0.02, 2, 8),
+                new THREE.MeshBasicMaterial({ color: 0xff0000 })
+            );
+            beam.rotateX(Math.PI/2);
+            beam.position.z = 1;
+            markerObj.add(beam);
+            const ring = new THREE.Mesh(
+                new THREE.RingGeometry(0.1, 0.3, 32),
+                new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: true, opacity: 0.6 })
+            );
+            markerObj.add(ring);
+            earth.add(markerObj);
+
+            animate();
+            is3DInit = true;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        function to3D() {
+            const d = historyData[currentId];
+            document.getElementById('map-view-container').classList.add('hidden-view');
+            const c3d = document.getElementById('campus-3d-view-container');
+            c3d.style.display = 'block';
+            requestAnimationFrame(() => c3d.style.opacity = '1');
+
+            document.getElementById('geoTitle').innerText = d.name;
+            document.getElementById('geoCoord').innerText = `${d.lat.toFixed(4)} N / ${d.lon.toFixed(4)} E`;
+
+            init3D();
+
+            earth.rotation.y = - (d.lon * Math.PI / 180) - Math.PI / 2;
+            earth.rotation.x = (d.lat * Math.PI / 180);
+
+            const phi = (90 - d.lat) * (Math.PI / 180);
+            const theta = (d.lon + 180) * (Math.PI / 180);
+            const r = 5;
+            const x = -(r * Math.sin(phi) * Math.cos(theta));
+            const z = (r * Math.sin(phi) * Math.sin(theta));
+            const y = (r * Math.cos(phi));
+            
+            markerObj.position.set(x, y, z);
+            markerObj.lookAt(new THREE.Vector3(0,0,0));
+        }
+
+        function toMap() {
+            document.getElementById('campus-3d-view-container').style.opacity = '0';
+            setTimeout(() => document.getElementById('campus-3d-view-container').style.display = 'none', 500);
+            document.getElementById('map-view-container').classList.remove('hidden-view');
+        }
+
+        // ================= AI 交互 =================
+        async function callAI(prompt, sys, json=false) {
+            if(!config.key) return "请设置 API Key";
+            const body = { model: "deepseek-chat", messages: [{role:"system",content:sys}, {role:"user",content:prompt}], stream:false };
+            if(json) body.response_format = {type:"json_object"};
+            
+            try {
+                const res = await fetch(`${config.url}/chat/completions`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${config.key}`},
+                    body: JSON.stringify(body)
+                });
+                const d = await res.json();
+                return d.choices[0].message.content;
+            } catch(e) { return "网络错误"; }
+        }
+
+        function addMsg(type, html) {
+            const d = document.createElement('div');
+            d.className = `msg-box msg-${type}`;
+            d.innerHTML = html;
+            document.getElementById('chatBox').appendChild(d);
+            document.getElementById('chatBox').scrollTop = 9999;
+        }
+
+        async function getFact() {
+            addMsg('user', '讲个真实的海大冷知识');
+            addMsg('ai', '...');
+            const sys = "你是一位严谨的上海海事大学校史专家。请讲述一个**真实且有据可考**的学校冷知识。例如：吴淞商船学校的艰难创办、唐文治/萨镇冰等名人的贡献、'吴淞号'实习船的真实参数、或者灯塔的实际航标功能（它是真实有效的航标）。请纠正网络谣言，不要编造滑稽段子。50字以内。";
+            const txt = await callAI("冷知识", sys);
+            document.getElementById('chatBox').lastElementChild.innerHTML = txt;
+        }
+
+        async function startQuiz() {
+            if(!currentId) return alert('请先选择地点');
+            const d = historyData[currentId];
+            addMsg('user', '知识挑战');
+            addMsg('ai', '出题中...');
+            const sys = `基于上海海事大学历史【${d.name} ${d.year}】出单选题。JSON格式:{"q":"","o":["","",""],"a":0}`;
+            try {
+                let txt = await callAI("出题", sys, true);
+                txt = txt.replace(/```json|```/g, '').trim();
+                const q = JSON.parse(txt);
+                const h = `
+                    <div class="quiz-wrap">
+                        <div style="font-weight:bold; color:#fbbf24; margin-bottom:5px;">${q.q}</div>
+                        ${q.o.map((o,i)=>`<div class="quiz-opt" onclick="checkAns(this, ${i}, ${q.a})">${o}</div>`).join('')}
+                    </div>`;
+                document.getElementById('chatBox').lastElementChild.outerHTML = h;
+            } catch(e) { addMsg('ai', '出题失败'); }
+        }
+
+        function checkAns(el, i, ans) {
+            if(el.parentElement.getAttribute('done')) return;
+            el.parentElement.setAttribute('done',1);
+            if(i===ans) { el.classList.add('correct'); addMsg('ai','✅ 正确！'); }
+            else { el.classList.add('wrong'); addMsg('ai','❌ 错误'); }
+        }
+
+        async function sendMsg() {
+            const v = document.getElementById('chatIn').value.trim();
+            if(!v) return;
+            addMsg('user', v);
+            document.getElementById('chatIn').value = '';
+            addMsg('ai', '...');
+            const d = historyData[currentId];
+            const sys = `海事大学校史向导。当前：${d.name}（${d.year}）。`;
+            const res = await callAI(v, sys);
+            document.getElementById('chatBox').lastElementChild.innerHTML = res;
+        }
+
+        function showSettings() { document.getElementById('settingsModal').style.display = 'flex'; document.getElementById('keyIn').value = config.key; }
+        function saveConfig() {
+            config.key = document.getElementById('keyIn').value.trim();
+            config.url = document.getElementById('urlIn').value.trim();
+            localStorage.setItem('sk', config.key); localStorage.setItem('su', config.url);
+            document.getElementById('settingsModal').style.display = 'none';
+            alert("已保存");
+        }
+
+        initMap();
+    </script>
+</body>
+</html>
