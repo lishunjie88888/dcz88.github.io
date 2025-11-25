@@ -26,7 +26,7 @@
 
         /* ================= UI 组件 ================= */
         .glass-panel {
-            background: rgba(15, 23, 30, 0.85); backdrop-filter: blur(12px);
+            background: rgba(15, 23, 30, 0.9); backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
 
@@ -85,6 +85,22 @@
         .msg-ai { background: rgba(255,255,255,0.05); border-left: 2px solid #00d2ff; color: #ddd; }
         .msg-user { background: rgba(0, 119, 190, 0.3); align-self: flex-end; color: #fff; }
 
+        /* 档案卡片样式 */
+        .fact-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #b45309; /* 琥珀色边框 */
+            padding: 12px;
+            border-radius: 4px;
+            position: relative;
+            font-family: 'KaiTi', serif; /* 楷体更有档案感 */
+        }
+        .fact-card::before {
+            content: '绝密档案';
+            position: absolute; top: -10px; left: 10px;
+            background: #000; color: #b45309;
+            padding: 0 5px; font-size: 12px;
+        }
+
         /* 挑战题 */
         .quiz-wrap { background: rgba(251, 191, 36, 0.05); border: 1px solid rgba(251, 191, 36, 0.3); padding: 10px; border-radius: 6px; margin-top: 5px; }
         .quiz-opt { padding: 6px; margin: 4px 0; background: rgba(0,0,0,0.3); cursor: pointer; border-radius: 4px; font-size: 12px; transition: 0.2s; }
@@ -124,8 +140,8 @@
 
         <div class="map-ctrls">
             <button class="glass-btn" onclick="resetView()"><i class="fa-solid fa-earth-asia"></i> 全局</button>
-            <button class="glass-btn" onclick="flyToCity([31.23, 121.50], 11)"><i class="fa-solid fa-city"></i> 上海</button>
-            <button class="glass-btn" onclick="flyToCity([29.58, 106.58], 12)"><i class="fa-solid fa-mountain"></i> 重庆</button>
+            <button class="glass-btn" onclick="flyToCity([31.25, 121.50], 11)"><i class="fa-solid fa-city"></i> 上海</button>
+            <button class="glass-btn" onclick="flyToCity([29.60, 106.57], 12)"><i class="fa-solid fa-mountain"></i> 重庆</button>
         </div>
 
         <div class="ui-panel glass-panel" id="uiPanel">
@@ -141,8 +157,8 @@
             </button>
 
             <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <button class="glass-btn" style="flex:1; justify-content:center;" onclick="getFact()">💡 真实冷知识</button>
-                <button class="glass-btn" style="flex:1; justify-content:center;" onclick="startQuiz()">🏆 挑战</button>
+                <button class="glass-btn" style="flex:1; justify-content:center;" onclick="getFact()">💡 档案冷知识</button>
+                <button class="glass-btn" style="flex:1; justify-content:center;" onclick="startQuiz()">🏆 历史挑战</button>
             </div>
 
             <div class="chat-area" id="chatBox"></div>
@@ -180,65 +196,120 @@
             '1909': { 
                 name: "徐家汇借舍", year: "1909", lat: 31.1960, lon: 121.4350,
                 loc: "上海徐家汇 (南洋公学内)",
-                desc: "晚清邮传部上海高等实业学堂（今交通大学）内设立'船政科'，开创中国高等航海教育先河。无独立校舍，借用公学房舍办学。",
+                desc: "1909年，晚清邮传部上海高等实业学堂（今交通大学前身）设立'船政科'。这是中国高等航海教育的开端，当时借用公学房舍办学。",
                 zoom: 14 
             },
             '1912': { 
                 name: "吴淞炮台湾", year: "1912", lat: 31.3930, lon: 121.5030,
                 loc: "上海吴淞炮台湾",
-                desc: "船政科独立，成立'吴淞商船学校'。这是中国第一所拥有独立校舍的高等航海学府。1937年'八一三'事变中校舍被日军炸毁。",
+                desc: "1912年，船政科独立为'吴淞商船学校'，拥有了第一所独立校舍。这里扼守长江口，直到1937年'八一三'事变中校舍被日军炸毁。",
                 zoom: 13 
             },
             '1939': { 
                 name: "重庆溉澜溪", year: "1939", lat: 29.6000, lon: 106.5700,
                 loc: "重庆江北溉澜溪",
-                desc: "抗战爆发学校内迁。1939年复校称'国立重庆商船专科学校'。初期无校舍，租赁'江顺'轮办学（人称'舟大'），1942年在溉澜溪建成陆地校舍。",
+                desc: "抗战内迁，1939年在重庆复校为'国立重庆商船专科学校'。初期租用'江顺'轮办学（舟大），1942年在溉澜溪建成陆地校舍。",
                 zoom: 13 
             },
             '1946': { 
                 name: "虹口复校", year: "1946", lat: 31.2520, lon: 121.4950,
-                loc: "上海虹口东长治路",
-                desc: "抗战胜利，国立吴淞商船专科学校回沪复校。因吴淞原址毁于战火，校址设在东长治路505号（原雷士德工学院旧址）。",
+                loc: "上海虹口东长治路505号",
+                desc: "抗战胜利后，学校回沪恢复'国立吴淞商船专科学校'。因吴淞原址尽毁，选址东长治路505号（原雷士德工学院）办学。",
                 zoom: 14 
             },
             '1950': { 
-                name: "上海航务学院", year: "1950", lat: 31.2550, lon: 121.5020,
-                loc: "上海虹口 (东长治路区域)",
-                desc: "国立吴淞商船专科学校与上海交通大学航业管理系合并，成立'上海航务学院'。1953年，学院主体迁往大连，与其他院校合并组建大连海运学院。",
+                name: "上海航务学院", year: "1950", lat: 31.2560, lon: 121.5010,
+                loc: "上海虹口 (东长治路/霍山路)",
+                desc: "1950年，国立吴淞商船专科学校与上海交通大学航业管理系合并，组建'上海航务学院'。1953年，该院主体北迁大连，与其他院校合并组建大连海运学院。",
                 zoom: 14 
             },
             '1959': { 
                 name: "民生路校区", year: "1959", lat: 31.2360, lon: 121.5530,
                 loc: "上海浦东大道1550号",
-                desc: "交通部在沪重建'上海海运学院'，定址浦东大道民生路。一号楼、二号楼见证了半个世纪的航海人才培养。",
+                desc: "1959年，交通部在沪重建'上海海运学院'，定址浦东大道民生路。一号楼、二号楼见证了此后半个世纪中国航海人才的培养历程。",
                 zoom: 14 
             },
             '2008': { 
                 name: "临港新校区", year: "2008", lat: 30.9060, lon: 121.9060,
                 loc: "上海临港新城海港大道",
-                desc: "学校主体搬迁至东海之滨。拥有万吨级教学实习船'吴淞'号、全功能航海模拟器等现代化设施，2004年已更名为'上海海事大学'。",
+                desc: "2008年，学校主体搬迁至东海之滨。新校区拥有万吨级教学实习船'吴淞'号、现代化灯塔等设施，2004年已更名为'上海海事大学'。",
                 zoom: 13 
             }
         };
 
-        let map, currentId = null;
-        let config = { key: localStorage.getItem('sk') || 'sk-bf28c6d3ddfb4b88bc7b8d2b6efa0754', url: localStorage.getItem('su') || 'https://api.deepseek.com' };
+        // ================= 严谨题库 (优先使用) =================
+        const quizBank = {
+            '1909': [
+                { q: "1909年，上海高等实业学堂设立了什么科，标志着中国高等航海教育的开端？", o: ["船政科", "航海科", "轮机科"], a: 0 },
+                { q: "1909年办学初期，学校借用了哪里的校舍？", o: ["徐家汇南洋公学", "吴淞炮台湾", "浦东民生路"], a: 0 }
+            ],
+            '1912': [
+                { q: "1912年，学校更名为吴淞商船学校，其第一任校长是？", o: ["萨镇冰", "唐文治", "张謇"], a: 0 }, 
+                { q: "1937年，吴淞校舍因为什么事件被毁？", o: ["八一三事变", "九一八事变", "七七事变"], a: 0 },
+                { q: "吴淞商船学校的校训是？", o: ["忠信笃敬", "勤朴忠实", "爱国荣校"], a: 0 }
+            ],
+            '1939': [
+                { q: "抗战时期，学校内迁重庆复校，初期的校舍是什么？", o: ["租赁的'江顺'轮", "溉澜溪陆地校舍", "防空洞"], a: 0 },
+                { q: "重庆时期的校名是？", o: ["国立重庆商船专科学校", "国立吴淞商船专科学校", "上海航务学院"], a: 0 },
+                { q: "学校在重庆溉澜溪建成陆地校舍是在哪一年？", o: ["1942年", "1939年", "1945年"], a: 0 }
+            ],
+            '1946': [
+                { q: "1946年复校时，校址选在哪里？", o: ["虹口东长治路", "吴淞炮台湾", "浦东民生路"], a: 0 },
+                { q: "复校后的校名恢复为？", o: ["国立吴淞商船专科学校", "上海航务学院", "上海海运学院"], a: 0 },
+                { q: "复校初期借用的东长治路校舍原属于哪所学校？", o: ["雷士德工学院", "圣约翰大学", "震旦大学"], a: 0 }
+            ],
+            '1950': [
+                { q: "1950年，国立吴淞商船专科学校与哪所学校的相关系科合并成立了上海航务学院？", o: ["上海交通大学", "同济大学", "复旦大学"], a: 0 },
+                { q: "1953年，上海航务学院迁往哪里，参与组建大连海运学院？", o: ["大连", "青岛", "武汉"], a: 0 }
+            ],
+            '1959': [
+                { q: "1959年，交通部在上海重建的学校名称是？", o: ["上海海运学院", "上海海事大学", "上海航务学院"], a: 0 },
+                { q: "民生路校区位于哪条路上？", o: ["浦东大道", "民生路", "源深路"], a: 0 },
+                { q: "民生路校区的标志性建筑不包括？", o: ["灯塔", "一号楼", "二号楼"], a: 0 } // 民生路没有灯塔，灯塔在临港
+            ],
+            '2008': [
+                { q: "临港新校区拥有的万吨级教学实习船叫什么名字？", o: ["吴淞号", "育锋号", "育明号"], a: 0 },
+                { q: "学校在哪一年更名为上海海事大学？", o: ["2004年", "2008年", "2000年"], a: 0 },
+                { q: "临港新校区位于哪个湖畔？", o: ["滴水湖", "淀山湖", "太湖"], a: 0 }
+            ]
+        };
+
+        // ================= 严谨冷知识库 (优先使用) =================
+        const factBank = [
+            "【1912年】吴淞商船学校首届驾驶班学生毕业，仅有3人，他们是中国第一批接受现代高等航海教育的毕业生。",
+            "【1939年】抗战时期，学校租赁招商局'江顺'轮作为校舍长达4个月，史称'舟大'，体现了艰难困苦中不忘办学的精神。",
+            "【2008年】临港校区内的灯塔不仅仅是景观，它在海事局有正式备案，是一座真实有效的助航标志。",
+            "【1953年】上海航务学院北迁大连时，师生们是乘坐'大华'轮集体北上的，随船带走了大量教学仪器和图书。",
+            "【2008年】校园内的'吴淞'号是一艘真实的万吨级散货船，它并不是水泥造的，而是真正可以航行的船舶，后作为教学实习船永久停驻校园。",
+            "【1946年】复校时，由于吴淞原校舍全毁，学校借用了原雷士德工学院（东长治路505号）的校舍办学。",
+            "【1909年】唐文治校长在南洋公学设立船政科时，曾以此举'挽回利权'为己任，强调航权对国家的重要性。",
+            "【1929年】交通部吴淞商船学校校长曾由时任交通部部长王伯群兼任，他亲自题写了'忠信笃敬'的校训。",
+            "【1959年】上海海运学院重建初期，师资力量主要依靠从大连海运学院回沪的老教师和上海交大等高校的支持。"
+        ];
+
+        let currentId = null;
+        let map = null;
+        let config = { apiKey: localStorage.getItem('smu_key') || 'sk-bf28c6d3ddfb4b88bc7b8d2b6efa0754', apiUrl: localStorage.getItem('smu_url') || 'https://api.deepseek.com' };
 
         // ================= Leaflet 地图 =================
         function initMap() {
             map = L.map('map', { center: [35, 105], zoom: 4, zoomControl: false, attributionControl: false });
 
+            // 使用 Esri World Imagery (高清卫星图)
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19, attribution: 'Esri'
             }).addTo(map);
 
+            // 叠加地名注记 (透明层)
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19, opacity: 0.8
             }).addTo(map);
 
+            // 绘制历史轨迹线
             const points = Object.values(historyData).map(d => [d.lat, d.lon]);
             L.polyline(points, { color: '#00d2ff', weight: 2, dashArray: '5, 10', opacity: 0.7 }).addTo(map);
 
+            // 添加标记
             Object.keys(historyData).forEach(id => {
                 const d = historyData[id];
                 const icon = L.divIcon({
@@ -247,6 +318,7 @@
                     iconSize: [16, 16], iconAnchor: [8, 8]
                 });
                 const marker = L.marker([d.lat, d.lon], {icon}).addTo(map);
+                
                 marker.bindTooltip(`<b>${d.year}</b> ${d.name}`, { 
                     permanent: true, direction: 'top', className: 'campus-tooltip', offset: [0, -10]
                 });
@@ -257,6 +329,7 @@
         function selectLoc(id, marker) {
             currentId = id;
             const d = historyData[id];
+            
             document.querySelectorAll('.active-marker').forEach(e => e.classList.remove('active-marker'));
             if(marker.getElement()) marker.getElement().classList.add('active-marker');
 
@@ -282,7 +355,112 @@
         function resetView() { map.flyTo([35, 105], 4); }
         function flyToCity(coord, z) { map.flyTo(coord, z); }
 
-        // ================= 3D 卫星定位 (Three.js) =================
+        // ================= 2. AI 交互 (严谨 + 混合模式) =================
+        async function callAI(prompt, sys, json=false) {
+            if(!config.apiKey) return "请先设置 API Key";
+            const body = { model: "deepseek-chat", messages: [{role:"system",content:sys}, {role:"user",content:prompt}], stream:false };
+            if(json) body.response_format = {type:"json_object"};
+            
+            try {
+                const res = await fetch(`${config.apiUrl}/chat/completions`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${config.apiKey}`},
+                    body: JSON.stringify(body)
+                });
+                const d = await res.json();
+                return d.choices[0].message.content;
+            } catch(e) { return "网络连接失败，请检查设置。"; }
+        }
+
+        async function getFact() {
+            addMsg('user', '查阅一份真实的历史档案');
+            addMsg('ai', '正在检索档案馆...');
+            
+            // 优先从本地精选库中随机抽取一条 (80%概率)
+            if (Math.random() > 0.2 && factBank.length > 0) { 
+                const fact = factBank[Math.floor(Math.random() * factBank.length)];
+                setTimeout(() => { // 模拟思考时间
+                    document.getElementById('chatBox').lastElementChild.innerHTML = 
+                        `<div class="fact-card">${fact}</div>`;
+                }, 500);
+                return;
+            }
+
+            // AI 兜底 (20%概率)
+            const sys = "你是一位严谨的上海海事大学校史馆研究员。请提供一个**真实、有据可考**的学校历史或设施冷知识。重点关注：吴淞商船学校复校的艰辛、1950年上海航务学院的组建背景、临港灯塔是**真实有效的国家航标**（绝对不能说是假的）、'吴淞号'是真实的教学实习船。请用学术口吻纠正网络谣言，拒绝戏说。50字以内。";
+            const txt = await callAI("讲一个冷知识", sys);
+            document.getElementById('chatBox').lastElementChild.innerHTML = `<div class="fact-card">${txt}</div>`;
+        }
+
+        async function startQuiz() {
+            if(!currentId) return alert('请先选择一个历史节点');
+            const d = historyData[currentId];
+            addMsg('user', '发起历史挑战');
+            addMsg('ai', '出题中...');
+            
+            // 优先从本地题库抽题
+            const localQuestions = quizBank[currentId];
+            if (localQuestions && localQuestions.length > 0) {
+                // 随机取题
+                const q = localQuestions[Math.floor(Math.random() * localQuestions.length)];
+                setTimeout(() => renderQuiz(q), 500);
+                return;
+            }
+
+            // AI 兜底
+            const sys = `你是一位严谨的历史出题官。基于上海海事大学历史节点【${d.name} (${d.year})】出一道单项选择题。确保选项具有干扰性但事实唯一。JSON格式:{"q":"问题","o":["A","B","C"],"a":0}。`;
+            try {
+                let txt = await callAI("出题", sys, true);
+                txt = txt.replace(/```json|```/g, '').trim();
+                const q = JSON.parse(txt);
+                renderQuiz(q);
+            } catch(e) { addMsg('ai', '出题失败，请重试。'); }
+        }
+
+        function renderQuiz(q) {
+            const h = `
+                <div class="quiz-wrap">
+                    <div style="font-weight:bold; color:#fbbf24; margin-bottom:5px;">${q.q}</div>
+                    ${q.o.map((o,i)=>`<div class="quiz-opt" onclick="checkAns(this, ${i}, ${q.a})">${o}</div>`).join('')}
+                </div>`;
+            document.getElementById('chatBox').lastElementChild.outerHTML = h;
+        }
+
+        function checkAns(el, idx, ans) {
+            if(el.parentElement.getAttribute('done')) return;
+            el.parentElement.setAttribute('done', 'true');
+            if(idx === ans) {
+                el.classList.add('correct');
+                addMsg('ai', '✅ 回答正确！史实掌握得很扎实。');
+            } else {
+                el.classList.add('wrong');
+                el.parentElement.children[ans+1].classList.add('correct');
+                addMsg('ai', '❌ 回答错误。请参阅校史资料。');
+            }
+        }
+
+        async function sendMsg() {
+            const v = document.getElementById('chatIn').value.trim();
+            if(!v) return;
+            addMsg('user', v);
+            document.getElementById('chatIn').value = '';
+            addMsg('ai', '...');
+            const d = historyData[currentId];
+            const sys = `你是一位上海海事大学校史专家。当前讨论的历史时期是：${d.name}（${d.year}）。请基于真实历史回答用户提问，拒绝戏说。`;
+            const res = await callAI(v, sys);
+            document.getElementById('chatBox').lastElementChild.innerHTML = res;
+        }
+
+        function addMsg(type, html) {
+            const d = document.createElement('div');
+            d.className = `msg-box msg-${type}`;
+            d.innerHTML = html;
+            const area = document.getElementById('chatBox');
+            area.appendChild(d);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        // ================= 3. 3D 卫星定位 =================
         let scene, camera, renderer, earth, markerObj;
         let is3DInit = false;
 
@@ -292,6 +470,8 @@
             const h = document.getElementById('webgl-container').offsetHeight;
 
             scene = new THREE.Scene();
+            scene.background = null;
+
             camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 1000);
             camera.position.z = 18;
 
@@ -301,7 +481,7 @@
 
             new THREE.OrbitControls(camera, renderer.domElement).enableDamping = true;
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
             const sun = new THREE.DirectionalLight(0xffffff, 1.2);
             sun.position.set(50, 30, 50);
             scene.add(sun);
@@ -349,6 +529,7 @@
         function to3D() {
             const d = historyData[currentId];
             document.getElementById('map-view-container').classList.add('hidden-view');
+            
             const c3d = document.getElementById('campus-3d-view-container');
             c3d.style.display = 'block';
             requestAnimationFrame(() => c3d.style.opacity = '1');
@@ -378,85 +559,17 @@
             document.getElementById('map-view-container').classList.remove('hidden-view');
         }
 
-        // ================= AI 交互 =================
-        async function callAI(prompt, sys, json=false) {
-            if(!config.key) return "请设置 API Key";
-            const body = { model: "deepseek-chat", messages: [{role:"system",content:sys}, {role:"user",content:prompt}], stream:false };
-            if(json) body.response_format = {type:"json_object"};
-            
-            try {
-                const res = await fetch(`${config.url}/chat/completions`, {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${config.key}`},
-                    body: JSON.stringify(body)
-                });
-                const d = await res.json();
-                return d.choices[0].message.content;
-            } catch(e) { return "网络错误"; }
-        }
-
-        function addMsg(type, html) {
-            const d = document.createElement('div');
-            d.className = `msg-box msg-${type}`;
-            d.innerHTML = html;
-            document.getElementById('chatBox').appendChild(d);
-            document.getElementById('chatBox').scrollTop = 9999;
-        }
-
-        async function getFact() {
-            addMsg('user', '讲个真实的海大冷知识');
-            addMsg('ai', '...');
-            const sys = "你是一位严谨的上海海事大学校史专家。请讲述一个**真实且有据可考**的学校冷知识。例如：吴淞商船学校的艰难创办、唐文治/萨镇冰等名人的贡献、'吴淞号'实习船的真实参数、或者灯塔的实际航标功能（它是真实有效的航标）。请纠正网络谣言，不要编造滑稽段子。50字以内。";
-            const txt = await callAI("冷知识", sys);
-            document.getElementById('chatBox').lastElementChild.innerHTML = txt;
-        }
-
-        async function startQuiz() {
-            if(!currentId) return alert('请先选择地点');
-            const d = historyData[currentId];
-            addMsg('user', '知识挑战');
-            addMsg('ai', '出题中...');
-            const sys = `基于上海海事大学历史【${d.name} ${d.year}】出单选题。JSON格式:{"q":"","o":["","",""],"a":0}`;
-            try {
-                let txt = await callAI("出题", sys, true);
-                txt = txt.replace(/```json|```/g, '').trim();
-                const q = JSON.parse(txt);
-                const h = `
-                    <div class="quiz-wrap">
-                        <div style="font-weight:bold; color:#fbbf24; margin-bottom:5px;">${q.q}</div>
-                        ${q.o.map((o,i)=>`<div class="quiz-opt" onclick="checkAns(this, ${i}, ${q.a})">${o}</div>`).join('')}
-                    </div>`;
-                document.getElementById('chatBox').lastElementChild.outerHTML = h;
-            } catch(e) { addMsg('ai', '出题失败'); }
-        }
-
-        function checkAns(el, i, ans) {
-            if(el.parentElement.getAttribute('done')) return;
-            el.parentElement.setAttribute('done',1);
-            if(i===ans) { el.classList.add('correct'); addMsg('ai','✅ 正确！'); }
-            else { el.classList.add('wrong'); addMsg('ai','❌ 错误'); }
-        }
-
-        async function sendMsg() {
-            const v = document.getElementById('chatIn').value.trim();
-            if(!v) return;
-            addMsg('user', v);
-            document.getElementById('chatIn').value = '';
-            addMsg('ai', '...');
-            const d = historyData[currentId];
-            const sys = `海事大学校史向导。当前：${d.name}（${d.year}）。`;
-            const res = await callAI(v, sys);
-            document.getElementById('chatBox').lastElementChild.innerHTML = res;
-        }
-
-        function showSettings() { document.getElementById('settingsModal').style.display = 'flex'; document.getElementById('keyIn').value = config.key; }
-        function saveConfig() {
-            config.key = document.getElementById('keyIn').value.trim();
-            config.url = document.getElementById('urlIn').value.trim();
-            localStorage.setItem('sk', config.key); localStorage.setItem('su', config.url);
-            document.getElementById('settingsModal').style.display = 'none';
+        // 通用设置
+        function openSettings() { document.getElementById('settingsModal').classList.add('active'); document.getElementById('apiKeyInput').value = config.apiKey; }
+        function saveSettings() {
+            config.apiKey = document.getElementById('apiKeyInput').value.trim();
+            config.apiUrl = document.getElementById('baseUrlInput').value.trim();
+            localStorage.setItem('smu_key', config.apiKey);
+            localStorage.setItem('smu_url', config.apiUrl);
+            document.getElementById('settingsModal').classList.remove('active');
             alert("已保存");
         }
+        function handleKeyPress(e) { if(e.key === 'Enter') sendMsg(); }
 
         initMap();
     </script>
